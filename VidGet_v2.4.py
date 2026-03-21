@@ -1890,6 +1890,103 @@ class VidGet(tk.Tk):
         import os
         os._exit(0)
 
+
+    # ── Actualizaciones ───────────────────────────────────────────────────────
+    def _check_update_bg(self):
+        """Verifica en background si hay actualizacion disponible."""
+        if GITHUB_USER == "TU_USUARIO_GITHUB":
+            return
+        hay, version, url = verificar_actualizacion()
+        if hay:
+            self._update_info = (version, url)
+            self.after(0, self._mostrar_badge_update)
+
+    def _mostrar_badge_update(self):
+        """Muestra boton de update en el header."""
+        if not self._update_info: return
+        version, _ = self._update_info
+        self.btn_update.config(text=f"  Nueva version {version}")
+        self.btn_update.pack(side="right", padx=(0,8))
+
+    def _mostrar_update_dialog(self):
+        """Ventana de actualizacion integrada."""
+        if not self._update_info: return
+        version, url = self._update_info
+
+        dialog = tk.Toplevel(self)
+        dialog.title("Actualizacion disponible")
+        dialog.geometry("420x260")
+        dialog.resizable(False, False)
+        dialog.configure(bg=BG)
+        dialog.grab_set()
+        dialog.transient(self)
+
+        mk_label(dialog, f"  Version {version} disponible",
+                 fg=ACCENT, font=("Segoe UI", 14, "bold"), bg=BG).pack(pady=(24,6))
+        mk_label(dialog, f"Tu version actual: v{VERSION}",
+                 fg=MUTED, font=F_SM, bg=BG).pack()
+        mk_label(dialog,
+                 "Se descargara e instalara automaticamente.\nEl programa se reiniciara al terminar.",
+                 fg=TEXT, font=F_SM, bg=BG, justify="center").pack(pady=(10,0))
+
+        prog_frame = mk_frame(dialog)
+        prog_frame.pack(fill="x", padx=24, pady=(16,0))
+
+        style = ttk.Style()
+        style.configure("Upd.Horizontal.TProgressbar",
+                        troughcolor=SURFACE2, background=ACCENT,
+                        thickness=6, borderwidth=0)
+        barra = ttk.Progressbar(prog_frame, style="Upd.Horizontal.TProgressbar",
+                                mode="determinate", length=370)
+        barra.pack(fill="x")
+        lbl_est = mk_label(prog_frame, "", fg=MUTED, font=F_XS, bg=BG)
+        lbl_est.pack(anchor="w", pady=(4,0))
+
+        btns = mk_frame(dialog)
+        btns.pack(pady=(14,0))
+
+        def iniciar():
+            btn_si.config(state="disabled", text="Descargando...")
+            btn_no.config(state="disabled")
+            lbl_est.config(text="Descargando actualizacion...")
+
+            def progreso(pct):
+                dialog.after(0, lambda p=pct: [
+                    barra.__setitem__("value", p),
+                    lbl_est.config(text=f"Descargando... {p}%")
+                ])
+
+            def hilo():
+                nuevo = descargar_actualizacion(url, progreso)
+                if nuevo:
+                    dialog.after(0, lambda: lbl_est.config(
+                        text="Instalando... El programa se reiniciara."))
+                    dialog.after(800, lambda: aplicar_actualizacion(nuevo))
+                else:
+                    dialog.after(0, lambda: [
+                        lbl_est.config(text="Error al descargar.", fg=ERROR),
+                        btn_si.config(state="normal", text="Reintentar"),
+                        btn_no.config(state="normal"),
+                    ])
+
+            threading.Thread(target=hilo, daemon=True).start()
+
+        btn_si = tk.Button(btns, text="  Actualizar ahora",
+                           command=iniciar,
+                           bg=ACCENT, fg="#0d0d11",
+                           font=("Segoe UI", 11, "bold"),
+                           relief="flat", cursor="hand2",
+                           activebackground="#d4ff5a",
+                           padx=16, pady=8)
+        btn_si.pack(side="left", padx=(0,8))
+
+        btn_no = tk.Button(btns, text="Ahora no",
+                           command=dialog.destroy,
+                           bg=SURFACE2, fg=MUTED,
+                           font=F_SM, relief="flat",
+                           cursor="hand2", padx=16, pady=8)
+        btn_no.pack(side="left")
+
     def _on_resize(self, _):
         w = self.winfo_width() - 48
         if w > 100: self.progress.lbl_resultado.config(wraplength=w)
