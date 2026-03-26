@@ -1,11 +1,11 @@
 # VidGet
 Descargador de videos, audio e imágenes. YouTube, Instagram, TikTok, Twitter/X y +1000 sitios.
 
-# ===================================================================
+
 #  VIDGET - HISTORIAL DE VERSIONES
 #  Repositorio: github.com/UwUMADDOX/VidGet
 #  Ultima actualizacion: 2026-03-25
-# ===================================================================
+
 
 ### 🛠️ Sistema de Versiones
 | Versión | Tipo de Cambio | Ejemplo |
